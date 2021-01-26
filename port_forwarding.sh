@@ -29,9 +29,10 @@ function check_tool() {
     exit 1
   fi
 }
-# Now we call the function to make sure we can use wg-quick, curl and jq.
+# Now we call the function to make sure we can use curl, jq and base64.
 check_tool curl
 check_tool jq
+check_tool base64
 
 # Check if the mandatory environment variables are set.
 if [[ ! $PF_GATEWAY || ! $PIA_TOKEN || ! $PF_HOSTNAME ]]; then
