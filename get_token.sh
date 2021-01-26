@@ -73,8 +73,6 @@ if [[ ! $PIA_USER || ! $PIA_PASS ]]; then
   exit 1
 fi
 
-tokenLocation=/opt/piavpn-manual/token
-
 echo -n "Checking login credentials..."
 
 generateTokenResponse=$(curl -s -u "$PIA_USER:$PIA_PASS" \
@@ -87,14 +85,17 @@ if [ "$(echo "$generateTokenResponse" | jq -r '.status')" != "OK" ]; then
   echo
   exit
 fi
-  
+
 echo -e ${GREEN}OK!
 echo
 token=$(echo "$generateTokenResponse" | jq -r '.token')
 tokenExpiration=$(timeout_timestamp)
 echo -e PIA_TOKEN=$token${NC}
-echo $token > /opt/piavpn-manual/token || exit 1
-echo $tokenExpiration >> /opt/piavpn-manual/token
 echo 
 echo This token will expire in 24 hours, on $tokenExpiration.
 echo
+
+tokenLocation=/opt/piavpn-manual/token
+echo $token > $tokenLocation || exit 1
+echo $tokenExpiration >> $tokenLocation
+echo "Token is stored in $tokenLocation"

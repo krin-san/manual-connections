@@ -87,6 +87,13 @@ fi
 # $ ip route | head -1 | grep tun | awk '{ print $3 }'
 # This section will get updated as soon as we created the OpenVPN script.
 
+# Restore $PAYLOAD_AND_SIGNATURE from cache
+cacheLocation=/opt/piavpn-manual/payload_and_signature
+if [[ ! $PAYLOAD_AND_SIGNATURE && -f $cacheLocation ]]; then
+  echo -e "Restoring \$PAYLOAD_AND_SIGNATURE from $cacheLocation..."
+  PAYLOAD_AND_SIGNATURE=$(cat $cacheLocation)
+fi
+
 # Get the payload and the signature from the PF API. This will grant you
 # access to a random port, which you can activate on any server you connect to.
 # If you already have a signature, and you would like to re-use that port,
@@ -110,9 +117,13 @@ export payload_and_signature
 # If they are not OK, just stop the script.
 if [ "$(echo "$payload_and_signature" | jq -r '.status')" != "OK" ]; then
   echo -e "${RED}The payload_and_signature variable does not contain an OK status.${NC}"
+  rm -f $cacheLocation # Remove cached tokens
   exit 1
 fi
 echo -e "${GREEN}OK!${NC}"
+
+echo $payload_and_signature > $cacheLocation
+echo "\$PAYLOAD_AND_SIGNATURE are stored in $cacheLocation"
 
 # We need to get the signature out of the previous response.
 # The signature will allow the us to bind the port on the server.
