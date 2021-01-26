@@ -30,9 +30,14 @@ function check_tool() {
   fi
 }
 
-# This function creates a timestamp, to use for setting $TOKEN_EXPIRATION
+# This function creates a timestamp offset by 24 hours, to use for setting $TOKEN_EXPIRATION
 function timeout_timestamp() {
-  date +"%c" --date='1 day' # Timestamp 24 hours
+  name=$(uname)
+  if [ "$name" = 'FreeBSD' -o "$name" = 'Darwin' ]; then
+    date -j -v+1d +%c
+  else
+    date +"%c" --date='1 day'
+  fi
 }
 
 # Now we call the function to make sure we can use curl and jq.

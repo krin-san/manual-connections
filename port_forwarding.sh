@@ -29,6 +29,16 @@ function check_tool() {
     exit 1
   fi
 }
+
+function timeout_timestamp() {
+  name=$(uname)
+  if [ "$name" = 'FreeBSD' -o "$name" = 'Darwin' ]; then
+    echo "$1" | cut -f1 -d"." | xargs date -jf "%Y-%m-%dT%H:%M:%S"
+  else
+    date --date="$1"
+  fi
+}
+
 # Now we call the function to make sure we can use curl, jq and base64.
 check_tool curl
 check_tool jq
@@ -45,7 +55,7 @@ if [[ ! $PF_GATEWAY || ! $PIA_TOKEN || ! $PF_HOSTNAME ]]; then
   echo as it will guide you through getting the best server and
   echo also a token. Detailed information can be found here:
   echo https://github.com/pia-foss/manual-connections
-exit 1
+  exit 1
 fi
 
 # Check if terminal allows output, if yes, define colors for output
@@ -149,7 +159,7 @@ while true; do
     fi
     echo -e Forwarded port'\t'${GREEN}$port${NC}
     echo -e Refreshed on'\t'${GREEN}$(date)${NC}
-    echo -e Expires on'\t'${RED}$(date --date="$expires_at")${NC}
+    echo -e Expires on'\t'${RED}$(timeout_timestamp $expires_at)${NC}
     echo -e "\n${GREEN}This script will need to remain active to use port forwarding, and will refresh every 15 minutes.${NC}\n"
 
     # sleep 15 minutes
