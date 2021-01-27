@@ -140,6 +140,8 @@ port="$(echo "$payload" | base64 -d | jq -r '.port')"
 # 2 months is not enough for your setup, please open a ticket.
 expires_at="$(echo "$payload" | base64 -d | jq -r '.expires_at')"
 
+echo "$port" > /opt/piavpn-manual/pf_port
+
 echo -ne "
 Signature ${GREEN}$signature${NC}
 Payload   ${GREEN}$payload${NC}
