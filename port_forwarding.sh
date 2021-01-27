@@ -19,6 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Should command keep port alive?
+${PF_SLEEP:=true}
+
+cacheDir='/opt/piavpn-manual/'
+
 # This function allows you to check if the required tools have been installed.
 function check_tool() {
   cmd=$1
@@ -87,13 +92,6 @@ fi
 # $ ip route | head -1 | grep tun | awk '{ print $3 }'
 # This section will get updated as soon as we created the OpenVPN script.
 
-# Restore $PAYLOAD_AND_SIGNATURE from cache
-cacheLocation=/opt/piavpn-manual/payload_and_signature
-if [[ ! $PAYLOAD_AND_SIGNATURE && -f $cacheLocation ]]; then
-  echo -e "Restoring \$PAYLOAD_AND_SIGNATURE from $cacheLocation..."
-  PAYLOAD_AND_SIGNATURE=$(cat $cacheLocation)
-fi
-
 # Get the payload and the signature from the PF API. This will grant you
 # access to a random port, which you can activate on any server you connect to.
 # If you already have a signature, and you would like to re-use that port,
@@ -117,13 +115,13 @@ export payload_and_signature
 # If they are not OK, just stop the script.
 if [ "$(echo "$payload_and_signature" | jq -r '.status')" != "OK" ]; then
   echo -e "${RED}The payload_and_signature variable does not contain an OK status.${NC}"
-  rm -f $cacheLocation # Remove cached tokens
+  rm -f "$cacheDir/pf_payload"
   exit 1
 fi
 echo -e "${GREEN}OK!${NC}"
 
-echo $payload_and_signature > $cacheLocation
-echo "\$PAYLOAD_AND_SIGNATURE are stored in $cacheLocation"
+echo -e $payload_and_signature > "$cacheDir/pf_payload"
+echo -e $(date) > "$cacheDir/pf_payload_date"
 
 # We need to get the signature out of the previous response.
 # The signature will allow the us to bind the port on the server.
@@ -140,7 +138,12 @@ port="$(echo "$payload" | base64 -d | jq -r '.port')"
 # 2 months is not enough for your setup, please open a ticket.
 expires_at="$(echo "$payload" | base64 -d | jq -r '.expires_at')"
 
-echo "$port" > /opt/piavpn-manual/pf_port
+echo -e "$port" > "$cacheDir/pf_port"
+
+# Update port in transmission if installed
+if command -v "transmission-remote" &>/dev/null; then
+  transmission-remote -p "$port"
+fi
 
 echo -ne "
 Signature ${GREEN}$signature${NC}
@@ -163,18 +166,24 @@ while true; do
     "https://${PF_HOSTNAME}:19999/bindPort")"
     echo -e "${GREEN}OK!${NC}"
 
-    # If port did not bind, just exit the script.
-    # This script will exit in 2 months, since the port will expire.
-    export bind_port_response
-    if [ "$(echo "$bind_port_response" | jq -r '.status')" != "OK" ]; then
-      echo -e "${RED}The API did not return OK when trying to bind port... Exiting."
-      exit 1
-    fi
-    echo -e Forwarded port'\t'${GREEN}$port${NC}
-    echo -e Refreshed on'\t'${GREEN}$(date)${NC}
-    echo -e Expires on'\t'${RED}$(timeout_timestamp $expires_at)${NC}
-    echo -e "\n${GREEN}This script will need to remain active to use port forwarding, and will refresh every 15 minutes.${NC}\n"
+  # If port did not bind, just exit the script.
+  # This script will exit in 2 months, since the port will expire.
+  export bind_port_response
+  if [ "$(echo "$bind_port_response" | jq -r '.status')" != "OK" ]; then
+    echo -e "${RED}The API did not return OK when trying to bind port... Exiting."
+    exit 1
+  fi
+  echo -e Forwarded port'\t'${GREEN}$port${NC}
+  echo -e Refreshed on'\t'${GREEN}$(date)${NC}
+  echo -e Expires on'\t'${RED}$(timeout_timestamp $expires_at)${NC}
+  echo -e "\n${GREEN}This script will need to remain active to use port forwarding, and will refresh every 15 minutes.${NC}\n"
 
+  echo -e $(date) > "$cacheDir/pf_port_date"
+
+  if [[ "$PF_SLEEP" = "yes" ]]; then
     # sleep 15 minutes
     sleep 900
+  else
+    break
+  fi
 done

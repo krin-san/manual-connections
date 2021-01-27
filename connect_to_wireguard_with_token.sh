@@ -194,4 +194,4 @@ $ ${GREEN}PIA_TOKEN=$PIA_TOKEN \\
 PIA_TOKEN=$PIA_TOKEN \
   PF_GATEWAY=$PF_SERVER_IP \
   PF_HOSTNAME=$WG_HOSTNAME \
-  ./port_forwarding.sh
+  ./cron_port_forwarding.sh
