@@ -170,7 +170,7 @@ while true; do
   # This script will exit in 2 months, since the port will expire.
   export bind_port_response
   if [ "$(echo "$bind_port_response" | jq -r '.status')" != "OK" ]; then
-    echo -e "${RED}The API did not return OK when trying to bind port... Exiting."
+    echo -e "${RED}The API did not return OK when trying to bind port... Exiting.${NC}"
     exit 1
   fi
   echo -e Forwarded port'\t'${GREEN}$port${NC}
