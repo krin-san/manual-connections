@@ -83,7 +83,7 @@ if [ "$(echo "$generateTokenResponse" | jq -r '.status')" != "OK" ]; then
   echo
   echo -e "${RED}Could not authenticate with the login credentials provided!${NC}"
   echo
-  exit
+  exit 1
 fi
 
 echo -e ${GREEN}OK!
